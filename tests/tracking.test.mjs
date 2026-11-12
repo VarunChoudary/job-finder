@@ -1,0 +1,7 @@
+import test from'node:test';import assert from'node:assert/strict';import{backup,parseBackup,mergeBackup,recordFor,due,validRecord}from'../lib/job-finder/tracking.mjs';
+const job={id:'one',title:'Engineer',company:'Example',country:'India',location:'Remote India',type:'Full-time',description:'Example',url:'https://example.com/job',source:'Example',updated:null,evidence:'Remote India'};
+const r={stage:'Interview',notes:'Discuss shift',followUp:'2026-11-12'};
+test('backup preserves application details',()=>{const d=parseBackup(JSON.stringify(backup([job],[],{one:r})));assert.deepEqual(d.jobs,[job]);assert.deepEqual(d.records.one,r)});
+test('restore keeps existing notes and adds missing jobs',()=>{const d=parseBackup(JSON.stringify(backup([job],[],{one:r})));assert.equal(mergeBackup([job],[],{one:{...r,notes:'Keep'}},d).records.one.notes,'Keep');assert.equal(mergeBackup([],[],{},d).added,1)});
+test('unsafe links duplicate ids and invalid dates are rejected',()=>{for(const mutate of [d=>d.jobs[0].url='javascript:alert(1)',d=>d.jobs.push({...job}),d=>d.records.one.followUp='2026-02-30']){const d=JSON.parse(JSON.stringify(backup([job],[],{one:r})));mutate(d);assert.throws(()=>parseBackup(JSON.stringify(d)))}});
+test('legacy markers and closed follow-ups behave correctly',()=>{assert.equal(recordFor({},'one',['one']).stage,'Applied');assert.ok(due(r,'2026-11-12'));assert.equal(due({...r,stage:'Rejected'},'2026-11-12'),false);assert.equal(validRecord({...r,notes:'a'.repeat(3001)}),false)});
