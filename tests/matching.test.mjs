@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{jobMatch,trackingCsv,hasUnsupportedContactsOrNumbers}from'../lib/job-finder/matching.mjs';
+test('matching prioritizes relevant title and exposes evidence',()=>{const a=jobMatch('Python developer AWS',{title:'Python developer',description:'Python AWS services'}),b=jobMatch('Python developer AWS',{title:'Accountant',description:'Payroll spreadsheets'});assert.ok(a.rank>b.rank);assert.ok(a.matched.includes('python'));assert.equal(b.rank,0)});
+test('matching supports punctuation in technical skills',()=>assert.ok(jobMatch('C++ developer',{title:'C++ engineer',description:'C++'}).matched.includes('c++')));
+test('tracking CSV escapes quotes and formula cells',()=>{const csv=trackingCsv([{id:'1',title:'=formula',company:'A "company"',country:'India',url:'https://example.com'}],['1']);assert.ok(csv.includes('"\'=formula"'));assert.ok(csv.includes('A ""company""'));assert.ok(csv.includes('Applied'))});
+
+test('AI drafts reject new contact details and numeric claims',()=>{assert.ok(hasUnsupportedContactsOrNumbers('Experience 2020 - 2024','Experience 2020 - 2024; Phone 555-555-5555'));assert.ok(hasUnsupportedContactsOrNumbers('Support associate','Improved sales 50%'));assert.equal(hasUnsupportedContactsOrNumbers('Experience 2020 - 2024','Experience 2020 - 2024'),false)});

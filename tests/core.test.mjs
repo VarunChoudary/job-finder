@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {eligibility,cleanText,safeUrl,resumeChecks,redact} from '../lib/job-finder/core.mjs';
+test('India requires explicit remote location',()=>{assert.ok(eligibility('Remote - India','').eligible);assert.equal(eligibility('Bangalore, India','').eligible,false);assert.equal(eligibility('Indiana - Remote','').eligible,false)});
+test('worldwide accepts only absent conflicting restrictions',()=>{assert.ok(eligibility('Home based - Worldwide','').eligible);for(const text of ['Applicants must reside in the United States.','This role is not available in India.','Only candidates based in Europe may apply.','This is a hybrid position.'])assert.equal(eligibility('Remote - Worldwide',text).eligible,false,text)});
+test('global hire list is not evidence for a region-limited role',()=>{assert.equal(eligibility('Remote - US','We hire in India.').eligible,false);assert.equal(eligibility('Remote','Our customers are in India.').eligible,false)});
+test('URLs reject scripts and insecure links',()=>{assert.equal(safeUrl('javascript:alert(1)'),null);assert.equal(safeUrl('http://a.com'),null);assert.equal(safeUrl('https://example.com'),'https://example.com/')});
+test('markup is safely converted to plain text',()=>assert.equal(cleanText('<p>Hello &amp; welcome</p><script>bad()</script>'),'Hello & welcome'));
+test('keyword checks never claim ATS scores and match C++',()=>{const r=resumeChecks('Experience\nC++ and SQL\nEducation\nBTech','C++ SQL Python');assert.ok(r.matched.includes('c++'));assert.ok(r.missing.includes('python'));assert.equal(resumeChecks('','').coverage,null)});
+
+test('explicit overseas restrictions override worldwide',()=>{for(const t of ['This position is only open to candidates based in the US.','Applicants must be based in the U.S.','Eligible locations: United States and Canada.'])assert.equal(eligibility('Remote - Worldwide',t).eligible,false,t)});
+test('contact masking preserves employment years',()=>{assert.equal(redact('Engineer, 2020 - 2024.'),'Engineer, 2020 - 2024.');assert.equal(redact('+91 98765 43210'),'[PHONE]')});
